@@ -1,81 +1,52 @@
 import re
+import asyncio
 
 # ^\d{4} [A-Z0-9]{2} \d{2}:\d{2}:\d{2}[.]\d{3} \d{2}$
 # ^\d{4} [A-Z0-9]{2} [0-2]\d:[0-6]\d:[0-6]\d[.]\d{3} \d{2}$
-pattern = re.compile(r'\d{4} [A-Z0-9]{2} [0-2]\d:[0-6]\d:[0-6]\d[.]\d{3} \d{2}\r')
+# (?P<player_number>\d{4}) (?P<channel_id>[A-Z0-9]{2}) (?<timestamp>[0-2]\d:[0-5]\d:[0-6]\d[.]\d{3}) (?P<group_number>\d{2})\r
 
-
-def check_input_data(readline):
-    if pattern.fullmatch(readline):
-        return True
-    return False
+pattern = re.compile(r'\d{4} [A-Z0-9]{2} [0-2]\d:[0-5]\d:[0-6]\d[.]\d{3} \d{2}\r')
 
 
 class CheckTimeData:
-    player_number = "0000"
-    channel_id = "00"
-    hours = 0
-    minutes = 0
-    seconds = 0
-    float_of_time = 0
-    group_number = 0
-
-    def __init__(self):
-        self.clear_data()
+    check_data = {'player_number': '0000',
+                  'channel_id': '00',
+                  'timestamp': '00:00:00.000',
+                  'group_number': 0}
 
     def __init__(self, string):
-        self.clear_data()
         self.format_input(string)
 
-    def clear_data(self):
-        self.player_number = "0000"
-        self.channel_id = "00"
-        self.hours = 0
-        self.minutes = 0
-        self.seconds = 0
-        self.float_of_time = 0
-        self.group_number = 0
+    @staticmethod
+    def check_input_data(input_string):
+        if pattern.fullmatch(input_string):
+            return True
+        return False
 
     def format_input(self, string):
-        if not check_input_data(string):
+        if not CheckTimeData.check_input_data(string):
             return
 
-        self.player_number = string[0:4]
-        string = string[5:]
+        string = string.rstrip('\r')
+        result = re.split(' ', string)
 
-        self.channel_id = string[0:2]
-        string = string[3:]
-
-        self.hours = int(string[0:2])
-        string = string[3:]
-        self.minutes = int(string[0:2])
-        string = string[3:]
-        self.seconds = int(string[0:2])
-        string = string[3:]
-
-        self.float_of_time = int(string[0:3])
-        string = string[4:]
-
-        self.group_number = int(string[0:2])
+        self.check_data['player_number'] = result[0]
+        self.check_data['channel_id'] = result[1]
+        self.check_data['timestamp'] = result[2]
+        self.check_data['group_number'] = int(result[3])
 
     def get_group_number(self):
-        return self.group_number
+        return self.check_data.get('group_number')
 
-    def display_info(self):
-        print('спортсмен, нагрудный номер ' + self.player_number +
-              ' прошёл отсечку ' + self.channel_id + ' в ' +
-              str(self.hours).zfill(2) + ':' +
-              str(self.minutes).zfill(2) + ':' +
-              str(self.seconds).zfill(2) + '.' +
-              str(self.float_of_time)[0])
+    async def display_info(self):
+        print('спортсмен, нагрудный номер ' + self.check_data.get('player_number') +
+              ' прошёл отсечку ' + self.check_data.get('channel_id') +
+              ' в ' + self.check_data.get('timestamp')[:-2])
 
-    def print_info_to_file(self, file):
-        if not file.closed:
-            file.write(self.player_number + ' ' +
-                       self.channel_id + ' ' +
-                       str(self.hours).zfill(2) + ':' +
-                       str(self.minutes).zfill(2) + ':' +
-                       str(self.seconds).zfill(2) + '.' +
-                       str(self.float_of_time).zfill(3) + ' ' +
-                       str(self.group_number).zfill(2) + '\n'
+    async def print_info_to_file(self, filename='log.txt'):
+        with open(filename, 'a') as file:
+            file.write(self.check_data['player_number'] + ' ' +
+                       self.check_data['channel_id'] + ' ' +
+                       self.check_data['timestamp'] + ' ' +
+                       str(self.check_data['group_number']).zfill(2) + '\n'
                        )
